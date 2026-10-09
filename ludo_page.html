@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🎲 منچ آنلاین</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;font-family:Arial,sans-serif}
+
+/* پس‌زمینه‌ی چوبی */
+body{
+ background:
+  repeating-linear-gradient(92deg,rgba(0,0,0,.07) 0 2px,transparent 2px 8px),
+  radial-gradient(circle at center,#a56a45 0,#7b4a31 55%,#44271a 100%);
+ color:#f3d9a0;text-align:center;overflow-x:hidden
+}
+.wrap{width:100%;max-width:600px;margin:auto;padding:0 8px 10px}
+
+/* نوار بالا مثل بازی */
+h1{
+ font-size:24px;margin:0 -8px 12px;padding:13px 8px;
+ color:#f3d9a0;
+ background:linear-gradient(#34565f,#1f3940);
+ border-bottom:4px solid #c9a14a;
+ border-radius:0 0 20px 20px;
+ box-shadow:0 5px 14px #000a;
+ text-shadow:0 2px 3px #000b
+}
+
+/* پنل‌های چوبی با قاب طلایی */
+.panel{
+ background:
+  repeating-linear-gradient(95deg,rgba(0,0,0,.08) 0 2px,transparent 2px 9px),
+  linear-gradient(#8a5636,#5f3823);
+ border:3px solid #c9a14a;border-radius:18px;
+ padding:10px;margin:8px 0;
+ box-shadow:0 6px 18px #000a,inset 0 0 0 2px #3b2216,inset 0 0 18px #0006;
+ color:#f3d9a0
+}
+input,button{
+ width:100%;padding:13px;margin:4px 0;border:0;border-radius:13px;
+ font-size:17px;font-weight:bold
+}
+input{
+ background:#3b2216;color:#f3d9a0;
+ border:2px solid #a87b4a;
+ box-shadow:inset 0 3px 8px #000a
+}
+input::placeholder{color:#b99468}
+
+/* دکمه‌های برنجی */
+button{
+ background:linear-gradient(#e6c06a,#a67a2e);color:#3b2216;
+ box-shadow:0 4px 0 #5e4015,0 7px 10px #0007;
+ text-shadow:0 1px 0 #f7e2a8
+}
+button:disabled{opacity:.45}
+#game{display:none}
+
+/* ===== صحنه‌ی بازی: تخته‌ی گرد + چهار گوشه ===== */
+.arena{
+ width:min(98vw,570px);
+ aspect-ratio:1;
+ margin:10px auto 12px;
+ position:relative
+}
+
+/* اسم بازیکن‌ها کنار گوشه‌ی خودشان */
+.players{
+ position:absolute;inset:0;z-index:30;pointer-events:none
+}
+.player{
+ position:absolute;max-width:30%;overflow:hidden;text-overflow:ellipsis;
+ padding:4px 9px;border-radius:12px;
+ color:#fff;font-size:11px;font-weight:bold;
+ border:2px solid #c9a14a;box-shadow:0 3px 8px #000a;
+ white-space:nowrap
+}
+.player.yellow{top:1.5%;left:21%}
+.player.red{top:1.5%;right:21%}
+.player.green{bottom:1.5%;left:21%}
+.player.blue{bottom:1.5%;right:21%}
+.player.active{box-shadow:0 0 0 3px #f3d9a0,0 0 16px #f3d9a0;transform:scale(1.07)}
+
+.red{background:#b83f34}
+.yellow{background:#b8902e}
+.green{background:#3f7a50}
+.blue{background:#3a7096}
+
+/* تخته‌ی گرد چوبی */
+.board{
+ position:absolute;inset:7%;
+ border-radius:50%;
+ background:
+  repeating-linear-gradient(95deg,rgba(60,30,15,.13) 0 2px,transparent 2px 9px),
+  radial-gradient(circle at 50% 45%,#c48a62 0,#a46b4b 55%,#85523a 100%);
+ border:12px solid #4e2e1c;
+ box-shadow:
+   0 0 0 5px #c9a14a,
+   0 14px 30px #000b,
+   inset 0 0 0 4px #d9b45a66,
+   inset 0 0 40px #0006;
+ overflow:hidden
+}
+.arena + .panel{border-radius:14px;margin:10px auto;width:min(96vw,570px)}
+
+/* حلقه‌ی تزئینی داخلی */
+.board:before{
+ content:"";
+ position:absolute;
+ inset:25%;
+ border-radius:50%;
+ border:3px solid #5e3a24;
+ box-shadow:inset 0 0 22px #0006,0 0 0 2px #c9a14a55;
+ pointer-events:none
+}
+
+/* خانه‌های چهار بازیکن، روی چهار گوشه */
+.home{
+ position:absolute;width:19%;height:19%;
+ border-radius:24%;border:4px solid #d9b45a;
+ box-shadow:inset 0 0 18px #0007,0 5px 10px #000a;
+ z-index:10
+}
+.home.redHome{top:1%;right:1%;background:#a73a30}
+.home.yellowHome{top:1%;left:1%;background:#b08a2e}
+.home.greenHome{bottom:1%;left:1%;background:#3f7a50}
+.home.blueHome{bottom:1%;right:1%;background:#3a7096}
+
+/* جای مهره: سوراخ فرورفته */
+.homeDot{
+ position:absolute;width:20%;height:20%;
+ left:calc(6% + var(--i)*22%);top:calc(6% + var(--i)*22%);
+ background:radial-gradient(circle at 50% 35%,#5a3523,#2e1a10);
+ border-radius:50%;border:2px solid #2a170d;
+ box-shadow:inset 0 4px 7px #000c,0 1px 0 #ffffff33
+}
+.homeDot:nth-child(1){--i:0}
+.homeDot:nth-child(2){--i:1}
+.homeDot:nth-child(3){--i:2}
+.homeDot:nth-child(4){--i:3}
+.redHome .homeDot{left:calc(74% - var(--i)*22%)}
+.greenHome .homeDot{top:calc(74% - var(--i)*22%)}
+.blueHome .homeDot{left:calc(74% - var(--i)*22%);top:calc(74% - var(--i)*22%)}
+
+/* مسیر دایره‌ای: ۵۲ خانه با فاصله‌ی مساوی */
+.track{position:absolute;inset:0}
+.track:before,.track:after{
+ content:"";position:absolute;border-radius:50%;
+ border:2px solid #4e2e1c;pointer-events:none;
+ box-shadow:0 1px 0 #d8a27a55,inset 0 0 12px #0004
+}
+.track:before{inset:9%}
+.track:after{inset:15%}
+
+.trackDot{
+ position:absolute;
+ width:4.2%;height:4.2%;
+ border-radius:50%;
+ background:radial-gradient(circle at 50% 35%,#5a3523,#2e1a10);
+ border:2px solid #2a170d;
+ box-shadow:inset 0 3px 5px #000c,0 1px 0 #d8a27a66;
+ transform:translate(-50%,-50%)
+}
+
+/* مرکز: تاس وسط تخته */
+.center{
+ position:absolute;
+ width:27%;height:27%;
+ left:36.5%;top:36.5%;
+ border-radius:50%;
+ background:conic-gradient(
+  #a73a30 0 25%,
+  #b08a2e 25% 50%,
+  #3a7096 50% 75%,
+  #3f7a50 75%
+ );
+ border:6px solid #c9a14a;
+ box-shadow:0 5px 12px #000b,inset 0 0 14px #0007;
+ display:flex;align-items:center;justify-content:center
+}
+
+/* مهره */
+.piece{
+ width:68%;height:68%;left:16%;top:16%;
+ position:absolute;border-radius:50%;
+ border:3px solid #f0d28a;
+ box-shadow:0 3px 6px #000b,inset 0 3px 5px #fff7;
+ z-index:5
+}
+.homeDot .piece{width:130%;height:130%;left:-15%;top:-15%;border-width:2px}
+/* مهره‌ی روی مسیر بزرگ‌تر از سوراخ تا لمسش راحت باشد */
+.trackDot .piece{width:175%;height:175%;left:-37%;top:-37%;border-width:2px}
+.piece.red{background:radial-gradient(circle at 35% 25%,#ff8075,#a92820)}
+.piece.yellow{background:radial-gradient(circle at 35% 25%,#fff08a,#a77b17)}
+.piece.green{background:radial-gradient(circle at 35% 25%,#8bd99a,#386e45)}
+.piece.blue{background:radial-gradient(circle at 35% 25%,#91c5e8,#355b7b)}
+.selectable{animation:pulse 1s infinite;cursor:pointer}
+@keyframes pulse{50%{transform:scale(1.18);filter:brightness(1.25)}}
+
+/* تاس سفید با قاب چوبی و طلایی */
+.dice{
+ width:72%;height:72%;margin:0;padding:12%;
+ background:linear-gradient(#fff,#e4e0d8);
+ border:3px solid #3b2216;border-radius:16%;
+ box-shadow:0 0 0 2px #c9a14a,0 5px 10px #000a;
+ display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);
+ cursor:pointer;user-select:none
+}
+.dice i{place-self:center;width:70%;height:70%;border-radius:50%;
+ background:radial-gradient(circle at 35% 30%,#555,#111);opacity:0}
+.dice i.on{opacity:1}
+.dice.faded i.on{opacity:.35}
+.dice.ghost i:nth-child(5){opacity:.2}
+.dice.rolling{animation:roll .5s ease-out}
+@keyframes roll{
+ 0%{transform:rotate(0) scale(.85)}
+ 60%{transform:rotate(300deg) scale(1.12)}
+ 100%{transform:rotate(360deg) scale(1)}
+}
+#status{font-weight:bold;min-height:23px;color:#f3d9a0;text-shadow:0 2px 3px #000a}
+#msg{min-height:22px;font-size:13px;color:#e6c789}
+#loginMsg{color:#e6c789;min-height:20px}
+
+.track:before,.track:after,.board:before{display:none!important}
+.trackDot{width:6.4%;height:6.4%;border-width:2px;
+ background:radial-gradient(circle at 50% 35%,#8d5a3d,#5a3523);
+ box-shadow:inset 0 3px 5px #000a,0 1px 0 #d8a27a66}
+.board{inset:3%;border-width:8px}
+.diamond{position:absolute;width:12%;aspect-ratio:1;z-index:3;
+ background:linear-gradient(135deg,#a25f45,#6e3a28);
+ border:3px solid #4e2e1c;box-shadow:0 0 0 2px #c9a14a88,inset 0 0 10px #0007;
+ transform:translate(-50%,-50%) rotate(45deg)}
+.diamond:after{content:"";position:absolute;inset:22%;border:2px solid #d9b45a}
+.d1{left:50%;top:9%}.d2{left:50%;top:91%}.d3{left:9%;top:50%}.d4{left:91%;top:50%}
+.arena .home{position:absolute;inset:0!important;width:auto!important;height:auto!important;
+ background:none!important;border:0!important;box-shadow:none!important;
+ display:block!important;padding:0!important;pointer-events:none}
+.arena .home .homeDot{position:absolute;width:6.4%;height:6.4%;pointer-events:auto;
+ left:calc(46.8% + var(--sx)*var(--d)*1%);top:calc(46.8% + var(--sy)*var(--d)*1%)}
+.homeDot:nth-child(1){--d:12}.homeDot:nth-child(2){--d:16}
+.homeDot:nth-child(3){--d:20}.homeDot:nth-child(4){--d:24}
+.yellowHome{--sx:-1;--sy:-1}.redHome{--sx:1;--sy:-1}
+.greenHome{--sx:-1;--sy:1}.blueHome{--sx:1;--sy:1}
+.arena .home .homeDot .piece{width:112%;height:112%;left:-6%;top:-6%}
+.trackDot .piece{width:130%;height:130%;left:-15%;top:-15%}
+.player{font-size:13px;padding:6px 12px;max-width:28%}
+.player.yellow{top:0;left:0}.player.red{top:0;right:0;left:auto}
+.player.green{bottom:0;left:0;top:auto}.player.blue{bottom:0;right:0;left:auto;top:auto}
+
+.trackDot{width:5.6%;height:5.6%}
+.arena .home .homeDot{width:6%;height:6%;
+ left:calc(47% + var(--sx)*var(--d)*1%);top:calc(47% + var(--sy)*var(--d)*1%)}
+.homeDot:nth-child(1){--d:8}.homeDot:nth-child(2){--d:11.5}
+.homeDot:nth-child(3){--d:15}.homeDot:nth-child(4){--d:18.5}
+
+.trackDot{width:6%;height:6%}
+.arena .home .homeDot{width:6.4%;height:6.4%;
+ left:calc(46.8% + var(--sx)*var(--d)*1%);top:calc(46.8% + var(--sy)*var(--d)*1%)}
+.homeDot:nth-child(1){--d:24}.homeDot:nth-child(2){--d:28}
+.homeDot:nth-child(3){--d:32}.homeDot:nth-child(4){--d:36}
+
+.dice{background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important}
+
+.center{background:none!important;border:0!important;box-shadow:none!important}
+
+.diamond{display:none!important}
+.arena .home{display:none!important}
+
+.trackDot{width:6.2%;height:6.2%}
+.center{width:34%;height:34%;left:33%;top:33%}
+.dice{width:60%;height:60%;font-size:clamp(40px,12vw,70px)}
+
+.trackDot{width:6.2%;height:6.2%}
+.center{width:20%;height:20%;left:40%;top:40%}
+.dice{width:100%;height:100%;font-size:clamp(28px,8vw,48px)}
+.trackDot{width:6.2%;height:6.2%}
+.trackDot{width:6.2%;height:6.2%}
+.trackDot{width:4.8%;height:4.8%}
+.trackDot{width:4.8%;height:4.8%}
+.board{inset:0!important}
+.arena{width:min(100vw,600px)!important}
+.trackDot{width:5.4%!important;height:5.4%!important}
+.trackDot{width:4.6%!important;height:4.6%!important}
+
+.trackDot{width:5.6%!important;height:5.6%!important}
+.diamond{display:block!important;width:11%!important}
+.d1{left:50%!important;top:8%!important}
+.d2{left:50%!important;top:92%!important}
+.d3{left:8%!important;top:50%!important}
+.d4{left:92%!important;top:50%!important}
+.arena .home{display:block!important}
+.arena .home .homeDot{width:6%!important;height:6%!important;
+ left:calc(47% + var(--sx)*var(--d)*1%)!important;
+ top:calc(47% + var(--sy)*var(--d)*1%)!important}
+.homeDot:nth-child(1){--d:10}.homeDot:nth-child(2){--d:14}
+.homeDot:nth-child(3){--d:18}.homeDot:nth-child(4){--d:22}
+
+.qolDot.red{background:radial-gradient(circle at 50% 35%,#c4574c,#7a231b)!important;border-color:#d9b45a!important}
+.qolDot.blue{background:radial-gradient(circle at 50% 35%,#5b9bc4,#27506f)!important;border-color:#d9b45a!important}
+.qolDot.green{background:radial-gradient(circle at 50% 35%,#5fa874,#2b5a38)!important;border-color:#d9b45a!important}
+.qolDot.yellow{background:radial-gradient(circle at 50% 35%,#d9b04a,#8a6514)!important;border-color:#d9b45a!important}
+.arena .home{display:none!important}
+.arena .home{display:none!important}
+.arena .home{display:none!important}
+.trackDot{width:6.4%!important;height:6.4%!important}
+</style>
+<style>#voiceBox,#voiceStatus{display:none!important}</style></head>
+
+<body>
+<div class="wrap">
+
+<h1>🎲 منچ آنلاین</h1>
+
+<div id="login" class="panel">
+<input id="name" maxlength="20" placeholder="نام بازیکن">
+<button id="join">🚀 ورود به بازی</button>
+<div id="loginMsg"></div>
+</div>
+
+<div id="game">
+
+<div id="status">⏳ منتظر بازیکنان...</div>
+
+<div class="arena" id="arena">
+
+<div class="players" id="players"></div>
+
+<div class="board" id="board">
+<div class="track" id="track"></div><div class="diamond d1"></div><div class="diamond d2"></div><div class="diamond d3"></div><div class="diamond d4"></div>
+<div class="center"><div id="dice" class="dice">🎲</div></div>
+</div>
+
+<div class="home redHome">
+<div class="homeDot" data-home-color="red"></div>
+<div class="homeDot" data-home-color="red"></div>
+<div class="homeDot" data-home-color="red"></div>
+<div class="homeDot" data-home-color="red"></div>
+</div>
+
+<div class="home yellowHome">
+<div class="homeDot" data-home-color="yellow"></div>
+<div class="homeDot" data-home-color="yellow"></div>
+<div class="homeDot" data-home-color="yellow"></div>
+<div class="homeDot" data-home-color="yellow"></div>
+</div>
+
+<div class="home greenHome">
+<div class="homeDot" data-home-color="green"></div>
+<div class="homeDot" data-home-color="green"></div>
+<div class="homeDot" data-home-color="green"></div>
+<div class="homeDot" data-home-color="green"></div>
+</div>
+
+<div class="home blueHome">
+<div class="homeDot" data-home-color="blue"></div>
+<div class="homeDot" data-home-color="blue"></div>
+<div class="homeDot" data-home-color="blue"></div>
+<div class="homeDot" data-home-color="blue"></div>
+</div>
+
+</div>
+
+<div class="panel">
+
+<div id="voiceBox" style="margin:8px auto;display:flex;gap:8px;justify-content:center">
+<button id="micBtn" style="width:48%">🎙️ روشن کردن صدا</button>
+<button id="muteBtn" style="width:48%;background:linear-gradient(#8a5336,#5a3320);color:#f3d9a0;text-shadow:none" disabled>🔇 قطع صدا</button>
+</div>
+<div id="voiceStatus" style="font-size:13px;color:#e6c789">🎙️ مکالمه صوتی خاموش است</div>
+
+<button id="roll">🎲 انداختن تاس</button>
+<div id="msg"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+let socket=null;
+let state=null;
+let myId=null;
+
+const path=[];
+(function(){
+ const N=4000, pts=[], cum=[0];
+ for(let i=0;i<=N;i++){
+  const f=i/N*2*Math.PI;
+  const r=38-4*Math.cos(4*f);
+  const th=f-Math.PI/2;
+  pts.push({x:50+r*Math.cos(th),y:50+r*Math.sin(th)});
+  if(i>0)cum.push(cum[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));
+ }
+ const total=cum[N];
+ let j=0;
+ for(let n=0;n<36;n++){
+  const target=(n+0.5)/36*total;
+  while(j<N-1&&cum[j+1]<target)j++;
+  const u=(target-cum[j])/(cum[j+1]-cum[j]);
+  path.push({x:pts[j].x+(pts[j+1].x-pts[j].x)*u,y:pts[j].y+(pts[j+1].y-pts[j].y)*u});
+ }
+})();
+const board=document.getElementById("board");
+const track=document.getElementById("track");
+const nameInput=document.getElementById("name");
+const joinButton=document.getElementById("join");
+const loginBox=document.getElementById("login");
+const gameBox=document.getElementById("game");
+const loginMsg=document.getElementById("loginMsg");
+const playersBox=document.getElementById("players");
+const statusBox=document.getElementById("status");
+const diceBox=document.getElementById("dice");
+const rollButton=document.getElementById("roll");
+const msgBox=document.getElementById("msg");
+
+const OFF={red:0,blue:9,green:18,yellow:27};
+const QDIR={red:[0,-1],blue:[1,0],green:[0,1],yellow:[-1,0]};
+const QD=[28,22,16,10];
+function buildQol(){
+ for(const c in QDIR){
+  for(let k=0;k<4;k++){
+   const d=document.createElement("div");
+   d.className="trackDot qolDot "+c;
+   d.dataset.q=c+"-"+k;
+   d.style.left=(50+QDIR[c][0]*QD[k])+"%";
+   d.style.top=(50+QDIR[c][1]*QD[k])+"%";
+   track.appendChild(d);
+  }
+ }
+}
+function dotSel(color,pos){
+ if(pos>=36)return '.qolDot[data-q="'+color+'-'+(pos-36)+'"]';
+ return '.trackDot[data-index="'+((pos+OFF[color])%36)+'"]';
+}
+function buildTrack(){
+ track.innerHTML="";
+ for(let i=0;i<36;i++){
+  let d=document.createElement("div");
+  d.className="trackDot";
+  d.style.left=path[i].x+"%";
+  d.style.top=path[i].y+"%";
+  d.dataset.index=i;
+  track.appendChild(d);
+ }
+}
+
+function drawPieces(){
+ document.querySelectorAll(".piece").forEach(x=>x.remove());
+ if(!state)return;
+
+ state.players.forEach(player=>{
+  player.pieces.forEach((pos,index)=>{
+
+   if(pos<0){
+    let homes=document.querySelectorAll(
+      '.homeDot[data-home-color="'+player.color+'"]'
+    );
+    if(homes[index]){
+     let piece=document.createElement("div");
+     piece.className="piece "+player.color;
+
+     if(
+      player.id===myId &&
+      state.dice!==null &&
+      state.players[state.turn] &&
+      state.players[state.turn].id===myId
+     ){
+      piece.style.cursor="pointer";
+      piece.onclick=()=>move(index);
+     }
+
+     homes[index].appendChild(piece);
+    }
+    return;
+   }
+
+   
+
+   let dot=document.querySelector(
+    dotSel(player.color,pos)
+   );
+
+   if(!dot)return;
+
+   let piece=document.createElement("div");
+   piece.className="piece "+player.color;
+
+   if(
+    player.id===myId &&
+    state.dice!==null &&
+    state.players[state.turn] &&
+    state.players[state.turn].id===myId
+   ){
+    piece.classList.add("selectable");
+    piece.onclick=()=>move(index);
+   }
+
+   dot.appendChild(piece);
+  });
+ });
+}
+
+function drawPlayers(){
+ playersBox.innerHTML="";
+
+ state.players.forEach((p,i)=>{
+  let x=document.createElement("span");
+  x.className="player "+p.color+(i===state.turn?" active":"");
+  x.textContent=(p.id===myId?"⭐ ":"")+p.name;
+  playersBox.appendChild(x);
+
+  if(!myId && p.name===nameInput.value.trim())
+   myId=p.id;
+ });
+}
+
+const PIPS=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
+let lastDice=null;
+let lastShown=null;
+function showDice(n){
+ diceBox.innerHTML="<i></i>".repeat(9);
+ const show=(n!==null)?n:lastShown;
+ diceBox.classList.toggle("ghost",show===null);
+ diceBox.classList.toggle("faded",n===null&&lastShown!==null);
+ if(show!==null) PIPS[show].forEach(k=>diceBox.children[k].classList.add("on"));
+ if(n!==null){
+  if(n!==lastDice){
+   diceBox.classList.remove("rolling");
+   void diceBox.offsetWidth;
+   diceBox.classList.add("rolling");
+  }
+  lastShown=n;
+ }
+ lastDice=n;
+}
+
+function render(){
+ if(!state)return;
+ if(state.winner){drawPlayers();drawPieces();statusBox.textContent="🏆 برنده: "+state.winner;rollButton.disabled=true;msgBox.textContent="";return;}
+
+ drawPlayers();
+ drawPieces();
+
+ if(state.status==="waiting"){
+  statusBox.textContent="⏳ منتظر بازیکن دیگر...";
+  rollButton.disabled=true;
+  msgBox.textContent="👥 برای شروع حداقل ۲ بازیکن لازم است";
+  return;
+ }
+
+ let current=state.players[state.turn];
+ if(!current)return;
+
+ if(current.id===myId){
+  statusBox.textContent="🎯 نوبت شماست";
+  rollButton.disabled=state.dice!==null;
+ }else{
+  statusBox.textContent="⏳ نوبت "+current.name;
+  rollButton.disabled=true;
+ }
+
+ if(state.dice!==null){
+  showDice(state.dice);
+  msgBox.textContent="🎯 مهره خودت را انتخاب کن";
+ }else{
+  showDice(null);
+  msgBox.textContent="تاس را بینداز";
+ }
+}
+
+function joinGame(){
+ let playerName=nameInput.value.trim()||"بازیکن";
+
+ loginMsg.textContent="🔄 در حال اتصال...";
+ joinButton.disabled=true;
+
+ socket=new WebSocket((location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/ws/game");
+
+ socket.onopen=()=>{
+  loginBox.style.display="none";
+  gameBox.style.display="block";
+
+  socket.send(JSON.stringify({
+   action:"join",
+   room:"test-room",
+   name:playerName
+  }));
+ };
+
+ socket.onmessage=(event)=>{
+  let data=JSON.parse(event.data);
+
+  if(data.type==="state"){
+   state=data;
+   render();
+  }
+
+  if(data.type==="error"){
+   msgBox.textContent="⚠️ "+data.message;
+  }
+ };
+
+ socket.onerror=()=>{
+  loginMsg.textContent="❌ اتصال به سرور برقرار نشد";
+  joinButton.disabled=false;
+ };
+
+ socket.onclose=()=>{
+  statusBox.textContent="🔴 اتصال قطع شد";
+  rollButton.disabled=true;
+ };
+}
+
+function rollDice(){
+ if(socket&&socket.readyState===WebSocket.OPEN){
+  rollButton.disabled=true;
+  diceBox.classList.remove("rolling");
+  void diceBox.offsetWidth;
+  diceBox.classList.add("rolling");
+  socket.send(JSON.stringify({action:"roll"}));
+  setTimeout(()=>{ if(state) render(); },3000);
+ }
+}
+
+function move(index){
+ if(socket&&socket.readyState===WebSocket.OPEN){
+  socket.send(JSON.stringify({
+   action:"move",
+   piece:index
+  }));
+ }
+}
+
+joinButton.onclick=joinGame;
+rollButton.onclick=rollDice;
+// لمس تاس وسط تخته هم تاس می‌اندازد
+diceBox.onclick=()=>{ if(!rollButton.disabled) rollDice(); };
+
+buildTrack();buildQol();
+
+
+// ==================== مکالمه صوتی WebRTC ====================
+let voiceSocket=null;
+let localStream=null;
+let voicePeers={};
+let voiceStarted=false;
+
+const micBtn=document.getElementById("micBtn");
+const muteBtn=document.getElementById("muteBtn");
+const voiceStatus=document.getElementById("voiceStatus");
+
+async function startVoice(){
+ try{
+  localStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  voiceSocket=new WebSocket((location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/ws/voice");
+
+  voiceSocket.onopen=()=>{
+   voiceSocket.send(JSON.stringify({
+    action:"join",
+    room:"test-room"
+   }));
+   voiceStarted=true;
+   micBtn.disabled=true;
+   muteBtn.disabled=false;
+   voiceStatus.textContent="🎙️ میکروفون روشن است";
+  };
+
+  voiceSocket.onmessage=async(event)=>{
+   const data=JSON.parse(event.data);
+
+   if(data.type==="voice_peer_joined"){
+    const id="peer_"+Date.now()+"_"+Math.random();
+    const pc=createVoicePeer(id);
+    voicePeers[id]=pc;
+
+    const offer=await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    voiceSocket.send(JSON.stringify({
+     action:"signal",
+     data:{
+      kind:"offer",
+      from:id,
+      sdp:pc.localDescription
+     }
+    }));
+   }
+
+   if(data.type==="signal"){
+    await handleVoiceSignal(data.data);
+   }
+
+   if(data.type==="voice_peer_left"){
+    for(const id in voicePeers){
+     try{voicePeers[id].close()}catch(e){}
+     delete voicePeers[id];
+    }
+   }
+  };
+
+  voiceSocket.onerror=()=>{
+   voiceStatus.textContent="❌ اتصال صوتی برقرار نشد";
+  };
+
+ }catch(e){
+  voiceStatus.textContent="❌ دسترسی به میکروفون داده نشد";
+ }
+}
+
+function createVoicePeer(id){
+ const pc=new RTCPeerConnection({
+  iceServers:[{urls:"stun:stun.l.google.com:19302"}]
+ });
+
+ localStream.getTracks().forEach(track=>{
+  pc.addTrack(track,localStream);
+ });
+
+ pc.onicecandidate=e=>{
+  if(e.candidate && voiceSocket?.readyState===WebSocket.OPEN){
+   voiceSocket.send(JSON.stringify({
+    action:"signal",
+    data:{
+     kind:"ice",
+     from:id,
+     candidate:e.candidate
+    }
+   }));
+  }
+ };
+
+ pc.ontrack=e=>{
+  let audio=document.getElementById("audio_"+id);
+
+  if(!audio){
+   audio=document.createElement("audio");
+   audio.id="audio_"+id;
+   audio.autoplay=true;
+   audio.controls=false;
+   document.body.appendChild(audio);
+  }
+
+  audio.srcObject=e.streams[0];
+ };
+
+ return pc;
+}
+
+async function handleVoiceSignal(data){
+ if(!data)return;
+
+ if(data.kind==="offer"){
+  const id=data.from;
+  const pc=createVoicePeer(id);
+  voicePeers[id]=pc;
+
+  await pc.setRemoteDescription(data.sdp);
+
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  voiceSocket.send(JSON.stringify({
+   action:"signal",
+   data:{
+    kind:"answer",
+    from:id,
+    sdp:pc.localDescription
+   }
+  }));
+ }
+
+ if(data.kind==="answer"){
+  const pc=voicePeers[data.from];
+  if(pc){
+   await pc.setRemoteDescription(data.sdp);
+  }
+ }
+
+ if(data.kind==="ice"){
+  for(const id in voicePeers){
+   try{
+    await voicePeers[id].addIceCandidate(data.candidate);
+   }catch(e){}
+  }
+ }
+}
+
+function stopVoice(){
+ if(localStream){
+  localStream.getTracks().forEach(t=>t.stop());
+  localStream=null;
+ }
+
+ for(const id in voicePeers){
+  try{voicePeers[id].close()}catch(e){}
+ }
+
+ voicePeers={};
+
+ if(voiceSocket){
+  try{voiceSocket.close()}catch(e){}
+  voiceSocket=null;
+ }
+
+ voiceStarted=false;
+ micBtn.disabled=false;
+ muteBtn.disabled=true;
+ voiceStatus.textContent="🔇 مکالمه صوتی خاموش است";
+}
+
+micBtn.onclick=startVoice;
+muteBtn.onclick=stopVoice;
+
+</script>
+
+</body>
+</html>

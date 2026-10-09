@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>منچ آنلاین</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;font-family:Arial,sans-serif}
+body{background:repeating-linear-gradient(92deg,rgba(0,0,0,.07) 0 2px,transparent 2px 8px),radial-gradient(circle at center,#a56a45 0,#7b4a31 55%,#44271a 100%);color:#f3d9a0;text-align:center;overflow-x:hidden}
+.wrap{width:100%;max-width:600px;margin:auto;padding:0 8px 10px}
+h1{font-size:24px;margin:0 -8px 12px;padding:13px 8px;background:linear-gradient(#34565f,#1f3940);border-bottom:4px solid #c9a14a;border-radius:0 0 20px 20px;box-shadow:0 5px 14px #000a;text-shadow:0 2px 3px #000b}
+.panel{background:repeating-linear-gradient(95deg,rgba(0,0,0,.08) 0 2px,transparent 2px 9px),linear-gradient(#8a5636,#5f3823);border:3px solid #c9a14a;border-radius:18px;padding:10px;margin:8px 0;box-shadow:0 6px 18px #000a,inset 0 0 18px #0006}
+input,button{width:100%;padding:13px;margin:4px 0;border:0;border-radius:13px;font-size:17px;font-weight:bold}
+input{background:#3b2216;color:#f3d9a0;border:2px solid #a87b4a}
+input::placeholder{color:#b99468}
+button{background:linear-gradient(#e6c06a,#a67a2e);color:#3b2216;box-shadow:0 4px 0 #5e4015,0 7px 10px #0007}
+button:disabled{opacity:.45}
+#game{display:none}
+#status{font-weight:bold;min-height:23px;margin-bottom:6px;text-shadow:0 2px 3px #000a}
+#msg{min-height:22px;font-size:13px;color:#e6c789}
+
+.arena{position:relative;width:100%;aspect-ratio:1;margin:0 auto 10px}
+.board{position:absolute;inset:0;border-radius:50%;
+ background:repeating-linear-gradient(95deg,rgba(60,30,15,.13) 0 2px,transparent 2px 9px),radial-gradient(circle at 50% 45%,#c48a62 0,#a46b4b 55%,#85523a 100%);
+ border:8px solid #4e2e1c;box-shadow:0 0 0 4px #c9a14a,0 12px 26px #000b,inset 0 0 40px #0006}
+.layer{position:absolute;inset:0}
+.diamond{position:absolute;width:11%;aspect-ratio:1;background:linear-gradient(135deg,#a25f45,#6e3a28);border:3px solid #4e2e1c;box-shadow:0 0 0 2px #c9a14a88,inset 0 0 10px #0007;transform:translate(-50%,-50%) rotate(45deg)}
+.diamond:after{content:"";position:absolute;inset:22%;border:2px solid #d9b45a}
+.dot{position:absolute;width:5.8%;height:5.8%;border-radius:50%;transform:translate(-50%,-50%);
+ background:radial-gradient(circle at 50% 35%,#5a3523,#2e1a10);border:2px solid #2a170d;box-shadow:inset 0 3px 5px #000c,0 1px 0 #d8a27a66}
+.qol{border-color:#d9b45a}
+.qol.red{background:radial-gradient(circle at 50% 35%,#c4574c,#7a231b)}
+.qol.blue{background:radial-gradient(circle at 50% 35%,#5b9bc4,#27506f)}
+.qol.green{background:radial-gradient(circle at 50% 35%,#5fa874,#2b5a38)}
+.qol.yellow{background:radial-gradient(circle at 50% 35%,#d9b04a,#8a6514)}
+.pocket{position:absolute;width:24%;height:12%;border:3px solid #d9b45a;box-shadow:inset 0 0 12px #0008,0 4px 8px #000a}
+.pocket.top{border-radius:0 0 50% 50% / 0 0 100% 100%;border-top:0}
+.pocket.bot{border-radius:50% 50% 0 0 / 100% 100% 0 0;border-bottom:0}
+.pocket.red{background:#a73a30}.pocket.blue{background:#3a7096}.pocket.green{background:#3f7a50}.pocket.yellow{background:#b08a2e}
+.piece{position:absolute;width:128%;height:128%;left:-14%;top:-14%;border-radius:50%;border:3px solid #f0d28a;box-shadow:0 3px 6px #000b,inset 0 3px 5px #fff7;z-index:5}
+.piece.red{background:radial-gradient(circle at 35% 25%,#ff8075,#a92820)}
+.piece.yellow{background:radial-gradient(circle at 35% 25%,#fff08a,#a77b17)}
+.piece.green{background:radial-gradient(circle at 35% 25%,#8bd99a,#386e45)}
+.piece.blue{background:radial-gradient(circle at 35% 25%,#91c5e8,#355b7b)}
+.selectable{animation:pulse 1s infinite;cursor:pointer}
+@keyframes pulse{50%{transform:scale(1.15);filter:brightness(1.25)}}
+.player{position:absolute;max-width:17%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 7px;border-radius:10px;color:#fff;font-size:11px;font-weight:bold;border:2px solid #c9a14a;box-shadow:0 3px 8px #000a}
+.player.red{background:#b83f34;top:1%;right:16%}
+.player.yellow{background:#b8902e;top:1%;left:16%}
+.player.green{background:#3f7a50;bottom:1%;left:16%}
+.player.blue{background:#3a7096;bottom:1%;right:16%}
+.player.active{box-shadow:0 0 0 3px #f3d9a0,0 0 14px #f3d9a0}
+.dice{position:absolute;left:42%;top:42%;width:16%;height:16%;padding:2%;background:linear-gradient(#fff,#e4e0d8);border:2px solid #3b2216;border-radius:16%;box-shadow:0 4px 10px #000a;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);cursor:pointer;user-select:none}
+.dice i{place-self:center;width:75%;height:75%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#555,#111);opacity:0}
+.dice i.on{opacity:1}
+.dice.ghost i:nth-child(5){opacity:.2}
+.dice.rolling{animation:roll .5s ease-out}
+@keyframes roll{0%{transform:rotate(0) scale(.85)}60%{transform:rotate(300deg) scale(1.15)}100%{transform:rotate(360deg) scale(1)}}
+.board{inset:1.5%}
+#players{pointer-events:none}
+#players .player{pointer-events:auto}
+.homeDot{width:5.4%;height:5.4%}
+.homeDot .piece{width:112%;height:112%;left:-6%;top:-6%}
+.player{max-width:14%}
+.player.red{top:13.5%;right:0}
+.player.yellow{top:13.5%;left:0}
+.player.green{bottom:13.5%;left:0}
+.player.blue{bottom:13.5%;right:0}
+.dot[data-index="0"]{background:radial-gradient(circle at 50% 35%,#c4574c,#7a231b);border-color:#d9b45a}
+.dot[data-index="10"]{background:radial-gradient(circle at 50% 35%,#5b9bc4,#27506f);border-color:#d9b45a}
+.dot[data-index="20"]{background:radial-gradient(circle at 50% 35%,#5fa874,#2b5a38);border-color:#d9b45a}
+.dot[data-index="30"]{background:radial-gradient(circle at 50% 35%,#d9b04a,#8a6514);border-color:#d9b45a}
+.dot[data-index="0"]{background:radial-gradient(circle at 50% 35%,#d89a92,#a8625a)}
+.dot[data-index="10"]{background:radial-gradient(circle at 50% 35%,#9dbfd6,#5f869f)}
+.dot[data-index="20"]{background:radial-gradient(circle at 50% 35%,#9cc7a8,#5f8f6c)}
+.dot[data-index="30"]{background:radial-gradient(circle at 50% 35%,#dcc58a,#a88d4c)}
+.dot[data-index="1"]{background:radial-gradient(circle at 50% 35%,#d89a92,#a8625a);border-color:#d9b45a}
+.dot[data-index="11"]{background:radial-gradient(circle at 50% 35%,#9dbfd6,#5f869f);border-color:#d9b45a}
+.dot[data-index="21"]{background:radial-gradient(circle at 50% 35%,#9cc7a8,#5f8f6c);border-color:#d9b45a}
+.dot[data-index="31"]{background:radial-gradient(circle at 50% 35%,#dcc58a,#a88d4c);border-color:#d9b45a}
+#roll{display:none}
+.dice.ready{animation:glow 1s infinite}
+@keyframes glow{50%{box-shadow:0 0 0 4px #f3d9a0,0 0 18px #f3d9a0}}
+#micBtn,#muteBtn,#voiceStatus{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🎲 منچ آنلاین</h1>
+
+<div id="login" class="panel">
+<input id="name" maxlength="20" placeholder="نام بازیکن">
+<button id="join">🚀 ورود به بازی</button>
+<div id="loginMsg"></div>
+</div>
+
+<div id="game">
+<div id="status">⏳ منتظر بازیکنان...</div>
+<div class="arena" id="arena">
+ <div class="board"></div>
+ <div class="layer" id="deco"></div>
+ <div class="layer" id="track"></div>
+ <div class="layer" id="players"></div>
+ <div id="dice" class="dice"></div>
+</div>
+<div class="panel">
+ <div style="display:flex;gap:8px;justify-content:center">
+  <button id="micBtn" style="width:48%">🎙️ روشن کردن صدا</button>
+  <button id="muteBtn" style="width:48%;background:linear-gradient(#8a5336,#5a3320);color:#f3d9a0" disabled>🔇 قطع صدا</button>
+ </div>
+ <div id="voiceStatus" style="font-size:13px;color:#e6c789">🔇 مکالمه صوتی خاموش است</div>
+ <button id="roll">🎲 انداختن تاس</button>
+ <button id="exitBtn" style="display:none">🚪 خروج به گروه روبیکا</button>
+ <div id="msg"></div>
+</div>
+</div>
+</div>
+
+<script>window.onerror=function(m,u,l){var d=document.createElement("div");d.style="position:fixed;top:0;left:0;right:0;background:#900;color:#fff;z-index:99999;font-size:12px;padding:4px";d.textContent="ERR: "+m+" (خط "+l+")";document.body.appendChild(d)};</script>
+<script>window.onerror=function(m,u,l){var d=document.createElement("div");d.style="position:fixed;top:0;left:0;right:0;background:#900;color:#fff;z-index:99999;font-size:12px;padding:4px";d.textContent="ERR: "+m+" (خط "+l+")";document.body.appendChild(d)};</script>
+<script>
+let socket=null,state=null,myId=null;
+const Q=new URLSearchParams(location.search);
+const WS_GAME=Q.get("g")?"wss://"+Q.get("g"):(location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws/game";
+const WS_VOICE=Q.get("v")?"wss://"+Q.get("v"):"ws://"+location.hostname+":8766";
+const ROOM=new URLSearchParams(location.search).get("room")||"test-room";
+const $=id=>document.getElementById(id);
+const el=(t,c)=>{const e=document.createElement(t);e.className=c;return e};
+const nameInput=$("name"),joinButton=$("join"),loginBox=$("login"),gameBox=$("game"),loginMsg=$("loginMsg");
+const playersBox=$("players"),statusBox=$("status"),diceBox=$("dice"),rollButton=$("roll"),msgBox=$("msg"),track=$("track"),deco=$("deco");
+
+const TRACK=40;
+const OFF={red:1,blue:11,green:21,yellow:31};
+const DIR={red:[.6428,-.766],blue:[.766,.6428],green:[-.6428,.766],yellow:[-.766,-.6428]};
+const QR=[37,31,25,19];
+const CORNER={red:[1,0],blue:[1,1],green:[0,1],yellow:[0,0]};
+
+// مسیر نرم: زیر لوزی‌ها به داخل، بین لوزی‌ها به گوشه؛ خانه‌ی 0 قرمز در گوشه‌ی بالا راست
+const path=[];
+(function(){
+ // هر کمان از دایره‌ی شروع می‌گذره، پایین‌ترین نقطه رو می‌گیره و بدون فاصله به دایره‌ی جابه‌جاشده می‌رسه
+ const RC=43,XM=25,A=40*Math.PI/180;
+ const S={x:RC*Math.cos(A),y:-RC*Math.sin(A)};
+ const E={x:RC*Math.cos(A),y:RC*Math.sin(A)};
+ const B={x:XM,y:0},P={x:37.2,y:23.9};
+ const q=p=>p.x*p.x+p.y*p.y;
+ const dd=2*(S.x*(B.y-P.y)+B.x*(P.y-S.y)+P.x*(S.y-B.y));
+ const ux=(q(S)*(B.y-P.y)+q(B)*(P.y-S.y)+q(P)*(S.y-B.y))/dd;
+ const uy=(q(S)*(P.x-B.x)+q(B)*(S.x-P.x)+q(P)*(B.x-S.x))/dd;
+ const Rr=Math.hypot(S.x-ux,S.y-uy);
+ const nm=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<=-Math.PI)a+=2*Math.PI;return a};
+ const tA=Math.atan2(S.y-uy,S.x-ux);
+ let d=nm(Math.atan2(P.y-uy,P.x-ux)-tA);
+ const dB=nm(Math.atan2(B.y-uy,B.x-ux)-tA);
+ if(d*dB<0||Math.abs(dB)>Math.abs(d))d+=d>0?-2*Math.PI:2*Math.PI;
+ const L=[];
+ for(let k=0;k<4;k++){
+  const rot=k*Math.PI/2,co=Math.cos(rot),si=Math.sin(rot);
+  const put=(x,y)=>L.push({x:50+x*co-y*si,y:50+x*si+y*co});
+  for(let i=0;i<9;i++){const t=tA+d*i/8;put(ux+Rr*Math.cos(t),uy+Rr*Math.sin(t))}
+  put(E.x,E.y);
+ }
+ for(let n=0;n<40;n++)path.push(L[(n+39)%40]);
+})();
+
+function buildBoard(){
+ [[50,8],[50,92],[8,50],[92,50]].forEach(p=>{const d=el("div","diamond");d.style.left=p[0]+"%";d.style.top=p[1]+"%";deco.appendChild(d)});
+ path.forEach((p,i)=>{const d=el("div","dot");d.style.left=p.x+"%";d.style.top=p.y+"%";d.dataset.index=i;track.appendChild(d)});
+ for(const c in DIR){
+  QR.forEach((r,k)=>{const d=el("div","dot qol "+c);d.dataset.q=c+"-"+k;d.style.left=(50+DIR[c][0]*r)+"%";d.style.top=(50+DIR[c][1]*r)+"%";track.appendChild(d)});
+  const cx=CORNER[c][0],cy=CORNER[c][1];
+  const box=el("div","pocket "+c);
+  box.classList.add(cy?"bot":"top");box.style[cx?"right":"left"]="0";box.style[cy?"bottom":"top"]="0";
+  deco.appendChild(box);
+  for(let k=0;k<4;k++){
+   const dx=[7.5,16.5,9.2,14.8][k],dy=[3.4,3.4,7.6,7.6][k];
+   const d=el("div","dot homeDot");
+   d.dataset.c=c;d.dataset.i=k;
+   d.style.left=(cx?100-dx:dx)+"%";d.style.top=(cy?100-dy:dy)+"%";
+   track.appendChild(d);
+  }
+ }
+}
+
+function dotFor(color,pos){
+ if(pos>=TRACK)return '.qol[data-q="'+color+'-'+(pos-TRACK)+'"]';
+ return '.dot[data-index="'+((pos+OFF[color])%TRACK)+'"]';
+}
+
+function myTurn(){
+ return state&&state.dice!==null&&state.players[state.turn]&&state.players[state.turn].id===myId;
+}
+
+let prevPos={},animTimers=[];
+function drawPieces(){
+ animTimers.forEach(clearTimeout);animTimers=[];
+ document.querySelectorAll(".piece").forEach(x=>x.remove());
+ if(!state)return;
+ state.players.forEach(player=>{
+  player.pieces.forEach((pos,index)=>{
+   const key=player.id+"-"+index;
+   const old=prevPos[key];
+   prevPos[key]=pos;
+   const piece=el("div","piece "+player.color);
+   const place=p=>{
+    const dot=p<0
+     ?document.querySelector('.homeDot[data-c="'+player.color+'"][data-i="'+index+'"]')
+     :document.querySelector(dotFor(player.color,p));
+    if(dot)dot.appendChild(piece);
+   };
+   if(player.id===myId&&myTurn()){piece.classList.add("selectable");piece.dataset.idx=index;piece.style.touchAction="manipulation";piece.onpointerdown=ev=>{ev.preventDefault();move(index)}}
+   if(old!==undefined&&old>=0&&pos>old){
+    place(old);
+    for(let p=old+1;p<=pos;p++){
+     animTimers.push(setTimeout(()=>place(p),(p-old)*700));
+    }
+   }else{
+    place(pos);
+   }
+  });
+ });
+}
+
+function drawPlayers(){
+ playersBox.innerHTML="";
+ state.players.forEach((p,i)=>{
+  const x=el("span","player "+p.color+(i===state.turn?" active":""));
+  x.textContent=(p.id===myId?"⭐ ":"")+p.name;
+  playersBox.appendChild(x);
+  if(!myId&&p.name===nameInput.value.trim())myId=p.id;
+ });
+}
+
+const PIPS=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
+let lastDice=null;
+function showDice(n){
+ diceBox.innerHTML="<i></i>".repeat(9);
+ diceBox.classList.toggle("ghost",n===null);
+ if(n!==null)PIPS[n].forEach(k=>diceBox.children[k].classList.add("on"));
+ if(n!==null&&n!==lastDice){diceBox.classList.remove("rolling");void diceBox.offsetWidth;diceBox.classList.add("rolling")}
+ lastDice=n;
+}
+
+function render(){
+ if(!state)return;
+ drawPlayers();drawPieces();diceBox.classList.remove("ready");
+ if(state.winner){
+  statusBox.textContent="🏆 برنده: "+state.winner;exitBtn.style.display="block";
+  rollButton.disabled=true;msgBox.textContent="";showDice(state.dice);return;
+ }
+ if(state.status==="waiting"){
+  statusBox.textContent="⏳ منتظر بازیکن دیگر...";
+  rollButton.disabled=true;
+  msgBox.textContent="👥 برای شروع حداقل ۲ بازیکن لازم است";
+  showDice(null);return;
+ }
+ const current=state.players[state.turn];
+ if(!current)return;
+ if(current.id===myId){statusBox.textContent="🎯 نوبت شماست";rollButton.disabled=state.dice!==null;diceBox.classList.toggle("ready",state.dice===null)}
+ else{statusBox.textContent="⏳ نوبت "+current.name;rollButton.disabled=true}
+ if(state.dice!==null){showDice(state.dice);msgBox.textContent="🎯 مهره خودت را انتخاب کن"}
+ else{showDice(null);msgBox.textContent="🎲 روی تاس بزن"}
+}
+
+function joinGame(){
+ const playerName=nameInput.value.trim()||"بازیکن";
+ loginMsg.textContent="🔄 در حال اتصال...";
+ joinButton.disabled=true;
+ socket=new WebSocket(WS_GAME);
+ socket.onopen=()=>{
+  loginBox.style.display="none";gameBox.style.display="block";
+  socket.send(JSON.stringify({action:"join",room:ROOM,name:playerName}));
+ };
+ socket.onmessage=e=>{
+  const data=JSON.parse(e.data);
+  if(data.type==="closed"){document.body.innerHTML='<div style="color:#fff;font-size:22px;text-align:center;padding:60px 20px">'+data.message+'</div>';socket.close();return}
+  if(data.type==="you")myId=data.id;
+  if(data.type==="state"){state=data;render()}
+  if(data.type==="error")msgBox.textContent="⚠️ "+data.message;
+ };
+ socket.onerror=()=>{loginMsg.textContent="❌ اتصال به سرور برقرار نشد";joinButton.disabled=false};
+ socket.onclose=()=>{statusBox.textContent="🔴 اتصال قطع شد";rollButton.disabled=true};
+}
+function rollDice(){if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({action:"roll"}))}
+function move(index){if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({action:"move",piece:index}))}
+
+joinButton.onclick=joinGame;
+rollButton.onclick=rollDice;
+diceBox.onclick=()=>{
+ if(state&&state.dice!==null&&myTurn()){
+  const me=state.players.find(p=>p.id===myId);
+  if(me){
+   let i=-1;
+   if(state.dice===6)i=me.pieces.findIndex(x=>x<0);
+   if(i<0)i=me.pieces.findIndex(x=>x>=0);
+   if(i>=0){move(i);return}
+  }
+ }
+ if(!rollButton.disabled)rollDice()
+};
+const GROUP_URL="https://rubika.ir/joing/BBBEJJJHH0PSYPCAKCHOIWGWKWEDMDBA";
+const exitBtn=$("exitBtn");
+function leaveGame(){
+ if(!confirm("از بازی خارج می‌شوی؟"))return;
+ try{socket.send(JSON.stringify({action:"leave"}))}catch(e){}
+ setTimeout(()=>{location.href=GROUP_URL},300);
+}
+exitBtn.onclick=leaveGame;
+(function(){
+ var b=document.createElement("button");
+ b.textContent="🚪 خروج";
+ b.style="position:fixed;top:70px;left:8px;z-index:9999;font-size:14px;padding:6px 12px;border-radius:10px;background:#7a1c1c;color:#fff;border:2px solid #f0d28a";
+ b.onclick=leaveGame;
+ document.body.appendChild(b);
+})();
+buildBoard();showDice(null);
+(function(){
+ var b=document.createElement("button");
+ b.textContent="▶️ شروع بازی";
+ b.style="position:fixed;bottom:150px;left:50%;transform:translateX(-50%);z-index:9999;display:none;font-size:22px;padding:12px 30px;border-radius:14px;background:#2e8b3d;color:#fff;border:2px solid #f0d28a";
+ b.onclick=function(){socket.send(JSON.stringify({action:"start"}))};
+ document.body.appendChild(b);
+ setInterval(function(){
+  if(state&&state.status==="waiting"){
+   var n=state.players.length,t="";
+   if(state.expires){var l=Math.max(0,Math.floor(state.expires-Date.now()/1000));t=" — ⌛ "+Math.floor(l/60)+":"+("0"+l%60).slice(-2)}
+   msgBox.textContent="👥 "+n+"/4 بازیکن"+t;
+   b.style.display=(state.host===myId&&n>=2)?"block":"none";
+  }else{b.style.display="none"}
+ },500);
+})();
+(function(){
+ var c=document.createElement("div");
+ c.id="countdown";
+ c.style="position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#7a1c1c;color:#fff;font-size:26px;font-weight:bold;padding:4px 18px;border-radius:20px;z-index:9999;display:none;border:2px solid #f0d28a";
+ document.body.appendChild(c);
+ setInterval(function(){
+  if(state&&state.deadline&&state.dice!==null){
+   var left=Math.ceil(state.deadline-Date.now()/1000);
+   if(left<0)left=0;
+   c.textContent="⏱ "+left;
+   c.style.display="block";
+  }else{c.style.display="none"}
+ },200);
+})();
+
+document.addEventListener("pointerdown",function(e){var t=document.elementFromPoint(e.clientX,e.clientY);var d=document.getElementById("dbg");if(!d){d=document.createElement("div");d.id="dbg";d.style="position:fixed;top:0;left:0;right:0;background:#036;color:#fff;z-index:99999;font-size:13px;padding:4px;direction:ltr";document.body.appendChild(d)}d.textContent="TOUCH: "+(t?t.tagName+" ."+t.className+" #"+t.id:"none")},true);
+
+// ==================== مکالمه صوتی WebRTC ====================
+let voiceSocket=null;
+let localStream=null;
+let voicePeers={};
+let voiceStarted=false;
+
+const micBtn=document.getElementById("micBtn");
+const muteBtn=document.getElementById("muteBtn");
+const voiceStatus=document.getElementById("voiceStatus");
+
+async function startVoice(){
+ try{
+  localStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  voiceSocket=new WebSocket(WS_VOICE);
+
+  voiceSocket.onopen=()=>{
+   voiceSocket.send(JSON.stringify({
+    action:"join",
+    room:ROOM
+   }));
+   voiceStarted=true;
+   micBtn.disabled=true;
+   muteBtn.disabled=false;
+   voiceStatus.textContent="🎙️ میکروفون روشن است";
+  };
+
+  voiceSocket.onmessage=async(event)=>{
+   const data=JSON.parse(event.data);
+
+   if(data.type==="voice_peer_joined"){
+    const id="peer_"+Date.now()+"_"+Math.random();
+    const pc=createVoicePeer(id);
+    voicePeers[id]=pc;
+
+    const offer=await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    voiceSocket.send(JSON.stringify({
+     action:"signal",
+     data:{
+      kind:"offer",
+      from:id,
+      sdp:pc.localDescription
+     }
+    }));
+   }
+
+   if(data.type==="signal"){
+    await handleVoiceSignal(data.data);
+   }
+
+   if(data.type==="voice_peer_left"){
+    for(const id in voicePeers){
+     try{voicePeers[id].close()}catch(e){}
+     delete voicePeers[id];
+    }
+   }
+  };
+
+  voiceSocket.onerror=()=>{
+   voiceStatus.textContent="❌ اتصال صوتی برقرار نشد";
+  };
+
+ }catch(e){
+  voiceStatus.textContent="❌ دسترسی به میکروفون داده نشد";
+ }
+}
+
+function createVoicePeer(id){
+ const pc=new RTCPeerConnection({
+  iceServers:[{urls:"stun:stun.l.google.com:19302"}]
+ });
+
+ localStream.getTracks().forEach(track=>{
+  pc.addTrack(track,localStream);
+ });
+
+ pc.onicecandidate=e=>{
+  if(e.candidate && voiceSocket?.readyState===WebSocket.OPEN){
+   voiceSocket.send(JSON.stringify({
+    action:"signal",
+    data:{
+     kind:"ice",
+     from:id,
+     candidate:e.candidate
+    }
+   }));
+  }
+ };
+
+ pc.ontrack=e=>{
+  let audio=document.getElementById("audio_"+id);
+
+  if(!audio){
+   audio=document.createElement("audio");
+   audio.id="audio_"+id;
+   audio.autoplay=true;
+   audio.controls=false;
+   document.body.appendChild(audio);
+  }
+
+  audio.srcObject=e.streams[0];
+ };
+
+ return pc;
+}
+
+async function handleVoiceSignal(data){
+ if(!data)return;
+
+ if(data.kind==="offer"){
+  const id=data.from;
+  const pc=createVoicePeer(id);
+  voicePeers[id]=pc;
+
+  await pc.setRemoteDescription(data.sdp);
+
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  voiceSocket.send(JSON.stringify({
+   action:"signal",
+   data:{
+    kind:"answer",
+    from:id,
+    sdp:pc.localDescription
+   }
+  }));
+ }
+
+ if(data.kind==="answer"){
+  const pc=voicePeers[data.from];
+  if(pc){
+   await pc.setRemoteDescription(data.sdp);
+  }
+ }
+
+ if(data.kind==="ice"){
+  for(const id in voicePeers){
+   try{
+    await voicePeers[id].addIceCandidate(data.candidate);
+   }catch(e){}
+  }
+ }
+}
+
+function stopVoice(){
+ if(localStream){
+  localStream.getTracks().forEach(t=>t.stop());
+  localStream=null;
+ }
+
+ for(const id in voicePeers){
+  try{voicePeers[id].close()}catch(e){}
+ }
+
+ voicePeers={};
+
+ if(voiceSocket){
+  try{voiceSocket.close()}catch(e){}
+  voiceSocket=null;
+ }
+
+ voiceStarted=false;
+ micBtn.disabled=false;
+ muteBtn.disabled=true;
+ voiceStatus.textContent="🔇 مکالمه صوتی خاموش است";
+}
+
+micBtn.onclick=startVoice;
+muteBtn.onclick=stopVoice;
+
+
+</script>
+</body>
+</html>
